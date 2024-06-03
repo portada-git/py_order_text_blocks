@@ -1,0 +1,4 @@
+opencv-python<4.9,>=4.8
+cryptography~=42.0.7
+numpy~=1.26.4
+arcanum-newspaper-segmentation-client~=1.8.4

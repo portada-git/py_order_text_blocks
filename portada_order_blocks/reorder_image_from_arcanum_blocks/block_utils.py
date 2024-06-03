@@ -1,24 +1,28 @@
 import json
 from typing import Tuple
+from typing import Union
 
 import cv2
 import numpy as np
 
 
-def get_blocks_from_json(json_file_path: str) -> list[dict]:
+def get_blocks_from_json(json_file_path: Union[str, dict]) -> list[dict]:
     """
     Extracts blocks from a JSON file containing article data.
 
     Parameters:
-        json_path (str): The file path to the JSON file containing the data.
+        json_file_path (str): The file path to the JSON file containing the data.
 
     Returns:
         list[dict]: A list of dictionaries representing the extracted blocks.
     """
 
-    # Load the JSON data
-    with open(json_file_path, 'r') as json_file:
-        data = json.load(json_file)
+    if type(json_file_path) is str:
+        # Load the JSON data
+        with open(json_file_path, 'r') as json_file:
+            data = json.load(json_file)
+    else:
+        data = json_file_path
 
     # Extract all the blocks from the articles
     all_blocks = []

@@ -3,7 +3,8 @@ import numpy as np
 
 import json
 
-from block_utils import *
+from .block_utils import *
+from typing import Union
 
 
 """
@@ -492,13 +493,13 @@ def correct_block_order(blocks: list[dict], image: np.ndarray,
     return aligned_blocks
 
 
-def order_blocks(image_path: str, json_path: str) -> list[dict]:
+def order_blocks(image_path: Union[str, np.ndarray], json_path: Union[str, dict]) -> list[dict]:
     """
     Orders the blocks detected in an image based on their position.
 
     Parameters:
-        image_path (str): Path to the image file.
-        json_path (str): Path to the JSON file containing block information.
+        image_path (str|np.ndarray): Path to the image file or image already loaded.
+        json_path (str|dict): Path to the JSON file or a dict containing block information.
 
     Returns:
         list[dict]: A list of dictionaries representing blocks in
@@ -510,7 +511,11 @@ def order_blocks(image_path: str, json_path: str) -> list[dict]:
     blocks = get_blocks_from_json(json_path)
 
     # Load the image
-    image = cv2.imread(image_path)
+    if type(image_path) is str:
+        image = cv2.imread(image_path)
+    else:
+        image = image_path
+
     img_height, img_width, _ = image.shape
 
     # Filter blocks

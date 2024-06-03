@@ -5,7 +5,7 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='py_portada_order_blocks',
-    version='0.0.1',
+    version='0.0.2',
     description='tools for creating images of documents with only one column to avoid ordering problems when they are processed by OCR within the PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',
@@ -13,7 +13,7 @@ setup(name='py_portada_order_blocks',
     long_description=long_description,
     long_description_content_type='text/markdown',
     url="https://github.com/portada-git/py_portada_order_text_blocks",
-    packages=['py_portada_order_blocks'],
+    packages=['py_portada_order_blocks','py_portada_order_blocks.reorder_image_from_arcanum_blocks'],
     py_modules=['redraw_image'],
     install_requires=[ 
         'opencv-python >= 4.8,<4.9',

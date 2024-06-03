@@ -2,9 +2,9 @@ LICENSE.txt
 README.md
 pyproject.toml
 setup.py
-portada_order_blocks/__init__.py
-portada_order_blocks/decrypt.py
-portada_order_blocks/redraw_image.py
+py_portada_order_blocks/__init__.py
+py_portada_order_blocks/decrypt.py
+py_portada_order_blocks/redraw_image.py
 py_portada_order_blocks.egg-info/PKG-INFO
 py_portada_order_blocks.egg-info/SOURCES.txt
 py_portada_order_blocks.egg-info/dependency_links.txt

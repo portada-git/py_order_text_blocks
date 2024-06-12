@@ -5,7 +5,7 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='py_portada_order_blocks',
-    version='0.0.4',
+    version='0.0.5',
     description='tools for creating images of documents with only one column to avoid ordering problems when they are processed by OCR within the PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',

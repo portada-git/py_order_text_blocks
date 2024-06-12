@@ -22,7 +22,7 @@ def decrypt_file_openssl(file_name_enc, key, iterations=100000):
     encrypted_content = encrypted_content[16:]
 
     # Derive the key and IV using the password and salt with PBKDF2
-    dk = hashlib.pbkdf2_hmac('sha256', key.encode('utf-8'), salt, iterations, dklen=32 + 16)
+    dk = hashlib.pbkdf2_hmac('sha256', key.encode(), salt, iterations, dklen=32 + 16)
     key = dk[:32]
     iv = dk[32:]
 

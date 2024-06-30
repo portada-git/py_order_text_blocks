@@ -80,7 +80,55 @@ def draw_numbered_blocks(blocks: list[dict], image: np.ndarray) -> np.ndarray:
     return image_with_blocks
 
 
-def strech_blocks_horizontally(blocks: list[dict],
+def stack_blocks(image: np.ndarray, blocks: list[dict]) -> np.ndarray:
+    """
+    Creates an image with the text blocks stacked vertically.
+
+    Args:
+        blocks (list[dict]): A list of dictionaries representing blocks.
+        image (np.ndarray): Input image represented as a NumPy array.
+
+    Returns:
+        np.ndarray: An image with the blocks stacked vertically.
+    """
+
+    img_height, img_width, _ = image.shape
+    
+    cut_blocks = []
+    max_width = 0
+    
+    for block in blocks:
+        x1, y1, w, h = get_block_coordinates(block, img_width, img_height)
+        
+        # Calculate the bottom-right corner coordinates of each block
+        x2 = x1 + w
+        y2 = y1 + h
+
+        # Cut the text block region from the image
+        cut_block = image[y1:y2, x1:x2]
+
+        # Track the maximum width of the blocks
+        if cut_block.shape[1] > max_width:
+            max_width = cut_block.shape[1]
+        
+        # Append the cut block to the list
+        cut_blocks.append(cut_block)
+    
+    # Resize all blocks to have the same width as the widest block
+    resized_blocks = []
+    for block in cut_blocks:
+        if block.shape[1] < max_width:
+            padding = max_width - block.shape[1]
+            block = cv2.copyMakeBorder(block, 0, 0, 0, padding, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+        resized_blocks.append(block)
+
+    # Stack the cut blocks vertically
+    stacked_image = np.vstack(resized_blocks)
+    
+    return stacked_image
+
+
+def stretch_blocks_horizontally(blocks: list[dict],
                                image: np.ndarray) -> np.ndarray:
     """
     Stretches the blocks horizontally within the image and
@@ -100,13 +148,13 @@ def strech_blocks_horizontally(blocks: list[dict],
     # Stretch horizontally and fill with red color
     for block in blocks:
         _, y, _, h = get_block_coordinates(block, img_width, img_height)
-        cv2.rectangle(image_with_horizontal_blocks, (20, y+10),
-                      (img_width-20, y+h-10), (0, 0, 255), cv2.FILLED)
+        cv2.rectangle(image_with_horizontal_blocks, (20, y-5),
+                      (img_width-20, y+h+5), (0, 0, 255), cv2.FILLED)
 
     return image_with_horizontal_blocks
 
 
-def strech_blocks_vertically(blocks: list[dict],
+def stretch_blocks_vertically(blocks: list[dict],
                              image: np.ndarray) -> np.ndarray:
     """
     Stretches the blocks vertically within the image and
@@ -126,8 +174,8 @@ def strech_blocks_vertically(blocks: list[dict],
     # Stretch vertically and fill with red color
     for block in blocks:
         x, y, w, h = get_block_coordinates(block, img_width, img_height)
-        cv2.rectangle(image_with_vertical_blocks, (x+20, y-12),
-                      (x+w-20, y+h+25), (0, 0, 255), cv2.FILLED)
+        cv2.rectangle(image_with_vertical_blocks, (x+20, 10),
+                      (x+w-20, img_height-10), (0, 0, 255), cv2.FILLED)
 
     return image_with_vertical_blocks
 
@@ -178,7 +226,7 @@ def find_horizontal_contours(blocks: list[dict],
                           contours, sorted from top to bottom.
     """
 
-    image_with_horizontal_blocks = strech_blocks_horizontally(blocks, image)
+    image_with_horizontal_blocks = stretch_blocks_horizontally(blocks, image)
 
     isolated_image = isolate_red(image_with_horizontal_blocks)
 
@@ -249,7 +297,7 @@ def find_vertical_contours_array(blocks_in_horizontal_cnts: list[list[dict]],
 
     vertical_cnts_array = []
     for i, blocks in enumerate(blocks_in_horizontal_cnts):
-        contour_image = strech_blocks_vertically(blocks, image)
+        contour_image = stretch_blocks_vertically(blocks, image)
 
         # Uncomment this to see the images of the vertical contours.
         # cv2.imwrite(f"vertical_cnts_{i}.jpg", contour_image)
@@ -547,6 +595,9 @@ def main():
     # Draw the blocks in the correct order
     copy = draw_numbered_blocks(corrected_blocks, image)
     cv2.imwrite(f"Corrected_blocks_{YEAR}.jpg", copy)
+
+    stack_copy = stack_blocks(image, corrected_blocks)
+    cv2.imwrite(f"Stacked_blocks_{YEAR}.jpg", stack_copy)
 
     # Write the updated data to a new JSON file
     with open(f"Jsons/updated_{YEAR}.json", 'w') as json_file:

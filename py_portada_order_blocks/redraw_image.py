@@ -1,7 +1,7 @@
 import os
 import cv2
 import numpy as np
-from .reorder_image_from_arcanum_blocks import order_blocks, draw_numbered_blocks
+from .reorder_image_from_arcanum_blocks import order_blocks, draw_numbered_blocks, stack_blocks
 from .decrypt import decrypt_file_openssl
 from newspaper_segmentation_client import run_newspaper_segmentation
 
@@ -69,8 +69,8 @@ class PortadaRedrawImageForOcr(object):
         # get json blocks from arcanum
         arcanum_json = self.get_arcanum_blocks()
         corrected_blocks = order_blocks(self.image, arcanum_json)
-        self.image = draw_numbered_blocks(corrected_blocks, self.image)
-
+        # self.image = draw_numbered_blocks(corrected_blocks, self.image)
+        self.image = stack_blocks(self.image, corrected_blocks)
     def get_arcanum_blocks(self):
         decrypt_key = os.environ['MUNACRA_TERCES']
         arcanum_key = decrypt_file_openssl(self._config['arcanum_key_path'], decrypt_key)

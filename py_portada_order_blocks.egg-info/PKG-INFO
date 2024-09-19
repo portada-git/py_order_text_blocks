@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: py-portada-order-blocks
-Version: 0.0.6
+Version: 0.0.7
 Summary: tools for creating images of documents with only one column to avoid ordering problems when they are processed by OCR within the PortADa project
 Home-page: https://github.com/portada-git/py_portada_order_text_blocks
 Author: PortADa team

@@ -1,10 +1,12 @@
+import os
+import sys
 import cv2
 import numpy as np
 
 import json
 
 from .block_utils import *
-from typing import Union
+from .line_utils import *
 
 
 """
@@ -59,7 +61,7 @@ def draw_numbered_blocks(blocks: list[dict], image: np.ndarray) -> np.ndarray:
     Draws rectangles around each block in the image and numbers them based
     on their order.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
         image (np.ndarray): Input image represented as a NumPy array.
 
@@ -134,7 +136,7 @@ def stretch_blocks_horizontally(blocks: list[dict],
     Stretches the blocks horizontally within the image and
     fills them with red color.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
         image (np.ndarray): Input image represented as a NumPy array.
 
@@ -148,8 +150,8 @@ def stretch_blocks_horizontally(blocks: list[dict],
     # Stretch horizontally and fill with red color
     for block in blocks:
         _, y, _, h = get_block_coordinates(block, img_width, img_height)
-        cv2.rectangle(image_with_horizontal_blocks, (20, y-5),
-                      (img_width-20, y+h+5), (0, 0, 255), cv2.FILLED)
+        cv2.rectangle(image_with_horizontal_blocks, (20, y+4),
+                      (img_width-20, y+h-4), (0, 0, 255), cv2.FILLED)
 
     return image_with_horizontal_blocks
 
@@ -160,7 +162,7 @@ def stretch_blocks_vertically(blocks: list[dict],
     Stretches the blocks vertically within the image and
     fills them with red color.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks
         image (np.ndarray): Input image represented as a NumPy array.
 
@@ -174,8 +176,8 @@ def stretch_blocks_vertically(blocks: list[dict],
     # Stretch vertically and fill with red color
     for block in blocks:
         x, y, w, h = get_block_coordinates(block, img_width, img_height)
-        cv2.rectangle(image_with_vertical_blocks, (x+20, 10),
-                      (x+w-20, img_height-10), (0, 0, 255), cv2.FILLED)
+        cv2.rectangle(image_with_vertical_blocks, (x+int(w/7), 20),
+                      (x+w-int(w/7), img_height), (0, 0, 255), cv2.FILLED)
 
     return image_with_vertical_blocks
 
@@ -217,7 +219,7 @@ def find_horizontal_contours(blocks: list[dict],
     Finds horizontal contours within the image after stretching blocks
     horizontally and filling them with red color.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
         image (np.ndarray): Input image represented as a NumPy array.
 
@@ -242,7 +244,7 @@ def find_blocks_in_contours(blocks: list[dict], cnts: list[np.ndarray],
     """
     Finds blocks that are mostly contained within each contour.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
         cnts (list[np.ndarray]): A list of numpy arrays representing contours
                                  detected in the image.
@@ -275,7 +277,7 @@ def find_vertical_contours_array(blocks_in_horizontal_cnts: list[list[dict]],
     Finds vertical contours within each contour where horizontal blocks
     are located.
 
-    Args:
+    Parameters:
         blocks_in_horizontal_cnts (list[list[dict]]): A list of lists, where
                                                       each inner list
                                                       represents blocks
@@ -289,7 +291,7 @@ def find_vertical_contours_array(blocks_in_horizontal_cnts: list[list[dict]],
                                 vertical contours found within each of the
                                 horizontal contours.
 
-    Note:
+    Notes:
         - Horizontal contours need to be sorted from top to bottom.
         - Within each horizontal contour, vertical contours are sorted from
           left to right.
@@ -298,9 +300,6 @@ def find_vertical_contours_array(blocks_in_horizontal_cnts: list[list[dict]],
     vertical_cnts_array = []
     for i, blocks in enumerate(blocks_in_horizontal_cnts):
         contour_image = stretch_blocks_vertically(blocks, image)
-
-        # Uncomment this to see the images of the vertical contours.
-        # cv2.imwrite(f"vertical_cnts_{i}.jpg", contour_image)
 
         isolated_image = isolate_red(contour_image)
 
@@ -348,45 +347,6 @@ def remove_overlaping_contours(contours_array:
     return new_cnts_array
 
 
-def remove_thin_contours(contours_array: list[list[np.ndarray]],
-                         threshold: int) -> list[list[np.ndarray]]:
-    """
-    Removes thin contours within a list of contours based on a threshold.
-
-    Parameters:
-        contours_array (list[list[np.ndarray]]): A list of lists, where each
-                                                 inner list contains numpy
-                                                 arrays representing contours.
-        threshold (int): Threshold value to determine if a contour is too thin.
-
-    Returns:
-        list[list[np.ndarray]]: list[list[np.ndarray]]: A list of lists.
-                                                        Each inner list
-                                                        contains numpy
-                                                        arrays representing
-                                                        contours with thin
-                                                        contours removed.
-
-    """
-
-    new_cnts_array = []
-
-    for contours in contours_array:
-        contours_to_remove = set()
-
-        # Iterate through each contour to identify thin contours
-        for cnt in contours:
-            if is_contour_too_thin(cnt, threshold):
-                contours_to_remove.add(cv2.boundingRect(cnt))
-
-        # Remove thin contours from the list of contours
-        new_cnts = [cnt for cnt in contours
-                    if cv2.boundingRect(cnt) not in contours_to_remove]
-        new_cnts_array.append(new_cnts)
-
-    return new_cnts_array
-
-
 def correct_vertical_contour_order(vertical_cnts_array:
                                    list[list[np.ndarray]]
                                    ) -> list[list[np.ndarray]]:
@@ -422,7 +382,7 @@ def correct_vertical_contour_order(vertical_cnts_array:
         # relative to others
         for i, vc in enumerate(vertical_cnts):
             is_below = any(is_contour_above(vc2, vc)
-                           for vc2 in vertical_cnts[:i])
+                           for vc2 in vertical_cnts)
             if is_below:
                 cnts_below.append(vc)
             else:
@@ -442,7 +402,7 @@ def find_aligned_blocks(blocks: list[dict], horizontal_cnts: list[np.ndarray],
     Finds blocks aligned both horizontally and vertically within the detected
     contours.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
                              The blocks need to be sorted from top to bottom.
         horizontal_cnts (list[np.ndarray]): A list of numpy arrays
@@ -463,7 +423,7 @@ def find_aligned_blocks(blocks: list[dict], horizontal_cnts: list[np.ndarray],
                     aligned both horizontally and vertically within the
                     detected contours.
 
-    Note:
+    Notes:
         - Horizontal contours need to be sorted from top to bottom.
         - Within each horizontal contour, vertical contours need to be sorted
           from left to right.
@@ -474,7 +434,7 @@ def find_aligned_blocks(blocks: list[dict], horizontal_cnts: list[np.ndarray],
     for i, hc in enumerate(horizontal_cnts):
         vertical_cnts = vertical_cnts_array[i]
         for vc in vertical_cnts:
-            if is_contour_too_thin(vc, img_width/15):
+            if is_contour_too_thin(vc, 0.05*img_width):
                 continue
             aligned_blocks.extend([block for block in blocks
                                   if is_mostly_contained(
@@ -497,7 +457,7 @@ def correct_block_order(blocks: list[dict], image: np.ndarray,
     Corrects the order of blocks within the image based on their alignment
     within detected contours.
 
-    Args:
+    Parameters:
         blocks (list[dict]): A list of dictionaries representing blocks.
         image (np.ndarray): Input image represented as a NumPy array.
         horizontal_cnts (list[np.ndarray]): A list of numpy arrays
@@ -507,7 +467,7 @@ def correct_block_order(blocks: list[dict], image: np.ndarray,
         list[dict]: A list of dictionaries representing blocks with corrected
                     order based on alignment within detected contours.
 
-    Note:
+    Notes:
         - Horizontal contours are sorted from top to bottom.
         - Within each horizontal contour, vertical contours are sorted from
           left to right.
@@ -526,9 +486,6 @@ def correct_block_order(blocks: list[dict], image: np.ndarray,
 
     vertical_cnts_array = remove_overlaping_contours(vertical_cnts_array)
 
-    vertical_cnts_array = remove_thin_contours(vertical_cnts_array,
-                                               img_width/15)
-
     vertical_cnts_array = correct_vertical_contour_order(vertical_cnts_array)
 
     # Sort the blocks based on their y-coordinates
@@ -537,8 +494,291 @@ def correct_block_order(blocks: list[dict], image: np.ndarray,
     aligned_blocks = find_aligned_blocks(sorted_blocks, horizontal_cnts,
                                          vertical_cnts_array, img_width,
                                          img_height)
+    
+    aligned_blocks = stretch_all_blocks(aligned_blocks, horizontal_cnts, vertical_cnts_array, img_width, img_height)
 
     return aligned_blocks
+
+
+def split_sections(line: np.ndarray, img_width: int, img_height: int
+                   ) -> list[np.ndarray]:
+    """
+    Splits an image into three distinct areas based on bounding rectangle of the
+    contour line.
+
+    This function takes a contour line represented as a NumPy array and the
+    dimensions of an image, then computes the bounding rectangle of the contour.
+    It constructs three separate contours that represent the areas of the image
+    divided by the contour line.
+
+    Parameters:
+        line (np.ndarray): A NumPy array representing the coordinates of the
+                            contour line.
+        img_width (int): The width of the image.
+        img_height (int): The height of the image.
+
+    Returns:
+        list[np.ndarray]: A list containing two NumPy arrays, each representing a
+                            set of contour points that define two sections of the
+                            image. The first section is to the left of the contour
+                            line, and the second section is to the right. The
+                            function does not return a section for the lower right
+                            area as it does not contain relevant information.
+
+    Notes:
+    - The function constructs three contours based on the bounding rectangle of the provided line:
+      - `cnt1`: A contour representing the area to the left of the contour line.
+      - `cnt2`: A contour representing the area above the contour line to the right.
+      - `cnt3`: A contour representing the area below and to the right of the contour line,
+        which is not used as it does not contain relevant information.
+    - The function returns only the first two contours, as `cnt3` is deemed unnecessary.
+    """
+
+    x, y, w, h = cv2.boundingRect(line)
+
+    cnt1 = np.array([
+        [0, 0],
+        [x, 0],
+        [x, img_height],
+        [0, img_height]
+    ])
+
+    cnt2 = np.array([
+        [x, 0],
+        [img_width, 0],
+        [img_width, y],
+        [x, y]
+    ])
+
+    # This never contains information about Arrivals so we don't need it.
+    cnt3 = np.array([
+        [x, y],
+        [img_width, y],
+        [img_width, img_height],
+        [x, img_height]
+    ])
+
+    return [cnt1, cnt2]
+
+
+def split_wrong_blocks(blocks: list[dict], image: np.ndarray,
+                       column_lines: list[np.ndarray]) -> list[dict]:
+    """
+    Splits blocks in an image if they intersect with specified column lines, returning a refined list of non-overlapping blocks.
+
+    This function iteratively checks each block against a list of column lines, splitting any block that intersects with a column line. 
+    For each intersection, two new blocks are created, adjusted to fit either side of the intersecting line. The process continues 
+    until no further splits occur, ensuring each block remains distinct and aligned within the image boundaries.
+
+    Parameters:
+        blocks (list[dict]): A list of dictionaries representing blocks.
+        image (np.ndarray): Input image represented as a NumPy array.
+        column_lines (list[np.ndarray]): A list of column lines represented as NumPy arrays.
+                                            Each line is defined by a set of points and serves
+                                            as a boundary for splitting any intersecting blocks.
+
+    Returns:
+        list[dict]: A list of final split blocks. Each block is represented as a dictionary
+        with its updated bounding box coordinates and a label field indicating whether it was split.
+
+    Notes:
+    - The function continues to split blocks until no further splits occur across any column lines, ensuring stable results.
+    - Each block's coordinates are normalized with respect to the original image dimensions, allowing easy re-scaling.
+    """
+    
+    img_height, img_width, _ = image.shape
+    final_blocks = []
+    has_split_occurred = True
+
+    while has_split_occurred:  # Continue looping until no blocks are split
+        has_split_occurred = False
+        new_blocks = []
+
+        for block in blocks:
+            block_was_split = False
+
+            # Check each column line for intersection with the current block
+            for column_line in column_lines:
+                block_bounds = get_block_coordinates(block, img_width, img_height)
+                split_result = split_block_if_intersect(block_bounds, column_line)
+
+                # If there was a split, create new blocks and mark a split occurred
+                if len(split_result) > 1:
+                    new_block1 = copy_block(block)
+                    new_block1['bounds'][0] = split_result[0][0] / img_width
+                    new_block1['bounds'][1] = split_result[0][1] / img_height
+                    new_block1['bounds'][2] = split_result[0][2] / img_width
+                    new_block1['bounds'][3] = split_result[0][3] / img_height
+                    new_block1['label'] = "was_split"
+
+                    new_block2 = copy_block(block)
+                    new_block2['bounds'][0] = split_result[1][0] / img_width
+                    new_block2['bounds'][1] = split_result[1][1] / img_height
+                    new_block2['bounds'][2] = split_result[1][2] / img_width
+                    new_block2['bounds'][3] = split_result[1][3] / img_height
+                    new_block2['label'] = "was_split"
+
+                    # Add newly created blocks to `new_blocks` list for further evaluation
+                    new_blocks.append(new_block1)
+                    new_blocks.append(new_block2)
+
+                    # Indicate that a split occurred and break to re-evaluate from scratch
+                    has_split_occurred = True
+                    block_was_split = True
+                    break
+
+            # If the block wasn't split by any column line, add it to `final_blocks`
+            if not block_was_split:
+                final_blocks.append(block)
+
+        # Replace `blocks` with the new split blocks for the next iteration
+        blocks = new_blocks
+
+    return final_blocks
+
+
+def stretch_all_blocks(blocks: list[dict], horizontal_cnts: list[np.ndarray],
+                       vertical_cnts_array: list[list[np.ndarray]],
+                       img_width: int, img_height: int) -> list[dict]:
+    """
+    Adjusts blocks in an image by stretching or merging them to prevent information loss due to page curvature
+    and preserve sentence continuity within columns.
+
+    This function processes a list of blocks, stretching each block within a column downwards to align with the starting 
+    position of the next block in the same column. This helps avoid information loss between blocks. For blocks located 
+    in the first column, a leftward stretch is applied to account for possible distortion due to page curvature. Additionally, 
+    consecutive blocks within the same column that are adjacent are merged to maintain sentence integrity across the 
+    column, preventing unintentional breaks.
+
+    Parameters:
+        blocks (list[dict]): A list of dictionaries representing blocks.
+                             The blocks need to be sorted from top to bottom.
+        horizontal_cnts (list[np.ndarray]): A list of numpy arrays
+                                            representing horizontal contours.
+        vertical_cnts_array (list[list[np.ndarray]]): A list of lists, where
+                                                      each inner list contains
+                                                      numpy arrays
+                                                      representing vertical
+                                                      contours within each
+                                                      horizontal contour.
+        img_width (int): The width of the image in which the blocks and
+                           contours are located.
+        img_height (int): The height of the image in which the blocks and
+                            contours are located.
+
+    Returns:
+        list[dict]: A list of dictionaries representing adjusted blocks with
+                    updated bounding coordinates. Blocks that were merged 
+                    are removed from the final list to prevent overlap.
+
+    Notes:
+    -----
+    - Blocks within each column are stretched downwards to prevent information gaps between consecutive blocks.
+    - Blocks in the leftmost column are slightly stretched to the left to account for information loss due to page curvature.
+    - Adjacent blocks within the same column are merged if they appear contiguous, ensuring sentence continuity.
+    """
+        
+    blocks_to_remove = []
+    for hc_index, hc in enumerate(horizontal_cnts):
+        vertical_cnts = vertical_cnts_array[hc_index]
+        for vc_index, vc in enumerate(vertical_cnts):
+            for j, block in enumerate(blocks):
+                block_bounds = get_block_coordinates(block, img_width, img_height)
+                hc_coords = get_contour_coordinates(hc)
+                vc_coords = get_contour_coordinates(vc)
+                if not is_mostly_contained(block_bounds, hc_coords):
+                    continue
+                if not is_mostly_contained(block_bounds, vc_coords):
+                    continue
+                # stretch blocks in the leftmost column to account for curvature
+                if vc_index == 0 and block['bounds'][0] < 0.1:
+                    block['bounds'][0] -= 0.2*block['bounds'][0]
+                if j + 1 < len(blocks):
+                    block2_coords = get_block_coordinates(blocks[j+1], img_width, img_height)
+                    if not is_mostly_contained(block2_coords, hc_coords):
+                        continue
+                    if not is_mostly_contained(block2_coords, vc_coords):
+                        continue
+                    if (block['bounds'][3] < blocks[j+1]['bounds'][1]):
+                        block['bounds'][3] = blocks[j+1]['bounds'][1]
+                    if (block['bounds'][2] < blocks[j+1]['bounds'][0]):
+                        block['bounds'][0] = min(block['bounds'][0], blocks[j+1]['bounds'][0])
+                        block['bounds'][1] = min(block['bounds'][1], blocks[j+1]['bounds'][1])
+                        block['bounds'][2] = max(block['bounds'][2], blocks[j+1]['bounds'][2])
+                        block['bounds'][3] = max(block['bounds'][3], blocks[j+1]['bounds'][3])
+                        blocks_to_remove.append(j+1)
+                if j - 1 >= 0:
+                    block2_coords = get_block_coordinates(blocks[j-1], img_width, img_height)
+                    if not is_mostly_contained(block2_coords, hc_coords):
+                        continue
+                    if not is_mostly_contained(block2_coords, vc_coords):
+                        continue
+                    if (block['bounds'][3] < blocks[j-1]['bounds'][1]):
+                        block['bounds'][3] = blocks[j-1]['bounds'][1]
+                    if (block['bounds'][2] < blocks[j-1]['bounds'][0]):
+                        block['bounds'][0] = min(block['bounds'][0], blocks[j-1]['bounds'][0])
+                        block['bounds'][1] = min(block['bounds'][1], blocks[j-1]['bounds'][1])
+                        block['bounds'][2] = max(block['bounds'][2], blocks[j-1]['bounds'][2])
+                        block['bounds'][3] = max(block['bounds'][3], blocks[j-1]['bounds'][3])
+                        blocks_to_remove.append(j-1)
+
+    stretched_blocks = [block for i, block in enumerate(blocks)
+                       if i not in blocks_to_remove]
+    return stretched_blocks
+
+
+def should_split_sections(newspaper: str, newspaper_date: date, 
+                          num_horizontal_seg: int, 
+                          image: np.ndarray) -> Tuple[bool, Optional[np.ndarray]]:
+    """
+    Determines whether to split newspaper sections based on specified criteria, 
+    and identifies the relevant horizontal line if a split is needed.
+    
+    Parameters:
+        newspaper (str): The code name of the newspaper, used to apply specific
+                            rules.
+        newspaper_date (date): The publication date of the newspaper, used to
+                                assess if the split should occur.
+        num_horizontal_seg (int): The number of horizontal segments detected in
+                                    the image.
+        image (np.ndarray): The newspaper image in which horizontal lines are
+                            detected.
+    
+    Returns:
+        Tuple[bool, Optional[np.ndarray]]: A tuple where:
+                                            - The first element is a boolean
+                                                indicating if sections should be
+                                                split.
+                                            - The second element is the horizontal
+                                                line (if found) that indicates
+                                                where the split should occur, or
+                                                None if no such line is found.
+    """
+    # USED ONLY FOR LE SEMAPHORE DE MARSEILLE
+    # The date after which the blocks of the newspaper image might need to be
+    # split into left and right for better block ordering
+    sm_target_date = date(1892, 3, 20)
+
+    img_height, img_width, _ = image.shape
+
+    # Initialize split indicator and line variable
+    split_the_sections = False
+    split_line = None
+
+    # Check if the newspaper and date meet the criteria for splitting
+    if newspaper == "MAR_SM" and newspaper_date > sm_target_date and num_horizontal_seg == 1:
+        # Detect horizontal lines in the image
+        horizontal_lines = find_horizontal_lines(image)
+
+        # Identify a valid horizontal line for splitting based on position
+        for horizontal_line in horizontal_lines:
+            x, y, w, h = cv2.boundingRect(horizontal_line)
+            if x > 0.4 * img_width and (0.3 * img_height <= y <= 0.8 * img_height):
+                split_the_sections = True
+                split_line = horizontal_line
+                break
+
+    return split_the_sections, split_line
 
 
 def order_blocks(image_path: Union[str, np.ndarray], json_path: Union[str, dict]) -> list[dict]:
@@ -567,17 +807,33 @@ def order_blocks(image_path: Union[str, np.ndarray], json_path: Union[str, dict]
     img_height, img_width, _ = image.shape
 
     # Filter blocks
-    # Remove overlapping blocks
-    filtered_blocks = remove_overlapping_blocks(blocks, img_width,
-                                                img_height)
     # Remove artifacts from the blocks
-    filtered_blocks = remove_artifacts(filtered_blocks)
+    filtered_blocks = remove_artifacts(blocks)
+
+    # Merge overlapping blocks
+    filtered_blocks = merge_overlapping_blocks(filtered_blocks, img_width, img_height)
 
     # Find horizontal contours and sorts them from top to bottom
     horizontal_cnts = find_horizontal_contours(filtered_blocks, image)
 
+    # Find the column lines within each horizontal contour
+    column_lines = find_column_lines_per_horizontal_contour(horizontal_cnts, image)
+
+    # Split the blocks intersected by a column line
+    seperated_blocks = split_wrong_blocks(filtered_blocks, image, column_lines)
+
+    newspaper_date, page, newspaper = extract_date_page_and_newspaper(image_path)
+
+    # Check if horizontal contours should change, this is only used for Le Semaphore
+    split_the_sections, split_line = should_split_sections(newspaper, newspaper_date,
+                                                           len(horizontal_cnts), image)
+
+    # Change horizontal contours based on the split_line
+    if split_the_sections:
+        horizontal_cnts = split_sections(split_line, img_width, img_height)
+
     # Correct block order based on horizontal contours
-    corrected_blocks = correct_block_order(filtered_blocks, image,
+    corrected_blocks = correct_block_order(seperated_blocks, image,
                                            horizontal_cnts)
 
     return corrected_blocks

@@ -182,6 +182,55 @@ def find_column_lines(image: np.ndarray) -> list[np.ndarray]:
     return filtered_contours
 
 
+def find_column_lines_per_horizontal_contour(horizontal_cnts: list[np.ndarray],
+                                             image: np.ndarray) -> list[np.ndarray]:
+    """
+    Identifies and adjusts the coordinates of vertical column lines within specified 
+    horizontal contours of an image. Each column line is located relative to individual 
+    horizontal contours and adjusted to fit within the overall image.
+
+    Parameters:
+        horizontal_cnts (list[np.ndarray]): A list of contours representing
+                                            horizontal segments within the image.
+        image (np.ndarray): A BGR image array (height, width, 3) representing the
+                            input image from which column lines will be detected.
+
+    Returns:
+        list[np.ndarray]: A list of adjusted column line contours, with each
+                            line’s coordinates transformed to align with the
+                            image’s original dimensions.
+
+    Notes:
+    ------
+    - This function relies on `find_column_lines` to identify column lines within
+      each cropped area.
+    - Adjusting coordinates ensures that all contours fit within the original
+      image's coordinate system, making the result compatible with the original
+      image layout.
+
+    """
+
+    # Initialize list to store column lines adjusted to full image coordinates
+    correct_column_lines = []
+    
+    for i, cnt in enumerate(horizontal_cnts):
+        # Get the bounding box of each horizontal contour
+        x, y, w, h = cv2.boundingRect(cnt)
+        
+        # Crop the image to the bounding box
+        new_image = image[y:y+h, x:x+w]
+        
+        # Detect vertical column lines within the cropped region
+        column_lines = find_column_lines(new_image)
+        
+        # Adjust coordinates of each detected column line to align with the full image
+        for column_line in column_lines:
+            correct_column_lines.append(column_line + np.array([x, y]))
+    
+    return correct_column_lines
+
+
+
 def find_horizontal_lines(image: np.ndarray) -> list[np.ndarray]:
     """
     Detects and extracts contours representing horizontal lines in an image, 

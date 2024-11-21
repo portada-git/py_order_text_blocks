@@ -299,7 +299,7 @@ def extract_date_page_and_newspaper(filename: str) -> Optional[Tuple[date, int, 
                                             pattern.
     """
     # Define the pattern for matching the filename and capturing the newspaper name
-    pattern = r'(\d{4})_(\d{2})_(\d{2})_([A-Z]+_[A-Z]+)_(\d+)\.jpg'
+    pattern = r'(\d{4})_(\d{2})_(\d{2})_([A-Z]+_[A-Z]+)_(\d+).*'
 
     # Match the filename against the pattern
     match = re.match(pattern, filename)
@@ -317,7 +317,7 @@ def extract_date_page_and_newspaper(filename: str) -> Optional[Tuple[date, int, 
     else:
         return None
     
-#-----------------------------------------------
+
 def is_point_on_block_edge(point: Tuple[int, int],
                            block_bounds: Tuple[int, int, int, int]) -> bool:
     """
@@ -472,7 +472,7 @@ def split_block_if_intersect(block_bounds: Tuple[int, int, int, int],
 
     # Check intersections with each line segment in the column line
     for i in range(len(column_line) - 1):
-        line = (column_line[i][0], column_line[i][1], column_line[i + 1][0], column_line[i + 1][1])
+        line = (column_line[i][0][0], column_line[i][0][1], column_line[i + 1][0][0], column_line[i + 1][0][1])
         for block_edge in block_edges:
             intersection = find_line_intersection(line, block_edge)
             if intersection and is_point_on_block_edge(intersection, block_bounds):

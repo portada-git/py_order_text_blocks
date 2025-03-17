@@ -3,3 +3,4 @@ cryptography~=42.0.7
 numpy~=1.26.4
 arcanum-newspaper-segmentation-client~=1.8.4
 py_image_utils@ git+https://github.com/portada-git/py_image_utils#egg=py_image_utils
+pillow~=10.3.0

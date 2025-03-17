@@ -5,7 +5,7 @@ this_directory = Path(__file__).parent
 long_description = (this_directory / "README.md").read_text()
 
 setup(name='py_portada_order_blocks',
-    version='0.0.8',
+    version='0.0.9',
     description='tools for creating images of documents with only one column to avoid ordering problems when they are processed by OCR within the PortADa project',
     author='PortADa team',
     author_email='jcbportada@gmail.com',
@@ -20,7 +20,8 @@ setup(name='py_portada_order_blocks',
         'cryptography~=42.0.7',
         'numpy~=1.26.4',
         'arcanum-newspaper-segmentation-client~=1.8.4',
-	'py_image_utils @ git+https://github.com/portada-git/py_image_utils#egg=py_image_utils'
+        'py_image_utils @ git+https://github.com/portada-git/py_image_utils#egg=py_image_utils',
+        'pillow~=10.3.0'
     ], 
     python_requires='>=3.9',
     zip_safe=False)

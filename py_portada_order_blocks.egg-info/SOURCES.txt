@@ -14,3 +14,4 @@ py_portada_order_blocks.egg-info/top_level.txt
 py_portada_order_blocks/reorder_image_from_arcanum_blocks/__init__.py
 py_portada_order_blocks/reorder_image_from_arcanum_blocks/block_utils.py
 py_portada_order_blocks/reorder_image_from_arcanum_blocks/correct_blocks.py
+py_portada_order_blocks/reorder_image_from_arcanum_blocks/line_utils.py

@@ -3,5 +3,4 @@ opencv-python >= 4.8,<4.9
 numpy~=1.26.4
 arcanum-newspaper-segmentation-client~=1.8.4
 py_image_utils @ git+https://github.com/portada-git/py_image_utils#egg=py_image_utils
-py_image_utils~=0.0.8
 pillow~=10.3.0

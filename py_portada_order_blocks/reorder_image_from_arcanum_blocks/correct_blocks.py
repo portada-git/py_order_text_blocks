@@ -787,7 +787,7 @@ def order_blocks(image_path: Union[str, np.ndarray], json_path: Union[str, dict]
 
     Parameters:
         image_path (str|np.ndarray): Path to the image file or image already loaded.
-        json_path (str|dict): Path to the JSON file or a dict containing block information.
+        json_ipath (str|dict): Path to the JSON file or a dict containing block information.
 
     Returns:
         list[dict]: A list of dictionaries representing blocks in
@@ -822,15 +822,16 @@ def order_blocks(image_path: Union[str, np.ndarray], json_path: Union[str, dict]
     # Split the blocks intersected by a column line
     seperated_blocks = split_wrong_blocks(filtered_blocks, image, column_lines)
 
-    newspaper_date, page, newspaper = extract_date_page_and_newspaper(image_path)
+    if type(image_path) is str:
+        newspaper_date, page, newspaper = extract_date_page_and_newspaper(image_path)
 
-    # Check if horizontal contours should change, this is only used for Le Semaphore
-    split_the_sections, split_line = should_split_sections(newspaper, newspaper_date,
+        # Check if horizontal contours should change, this is only used for Le Semaphore
+        split_the_sections, split_line = should_split_sections(newspaper, newspaper_date,
                                                            len(horizontal_cnts), image)
 
-    # Change horizontal contours based on the split_line
-    if split_the_sections:
-        horizontal_cnts = split_sections(split_line, img_width, img_height)
+        # Change horizontal contours based on the split_line
+        if split_the_sections:
+            horizontal_cnts = split_sections(split_line, img_width, img_height)
 
     # Correct block order based on horizontal contours
     corrected_blocks = correct_block_order(seperated_blocks, image,
